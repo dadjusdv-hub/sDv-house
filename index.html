@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDV.House - Application Cloud Complète</title>
+    <!-- Leaflet CSS pour la Carte GPS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif;}
+        body{background:#121212;color:white;min-height:100vh;display:flex;justify-content:center;align-items:center;}
+        .container{width:100%;max-width:480px;background:rgba(20,20,20,.98);min-height:100vh;display:flex;flex-direction:column;box-shadow:0 15px 35px rgba(0,0,0,.7);position:relative;overflow:hidden;}
+        @media(min-width:481px){.container{min-height:92vh;border-radius:20px;}}
+        .view{display:none;flex:1;flex-direction:column;padding:20px;overflow-y:auto;}
+        .view.active{display:flex;}
+        .logo{font-size:30px;color:#ff9800;text-align:center;margin-bottom:5px;font-weight:bold;}
+        .logo span{color:white;}
+        .slogan{color:#aaa;text-align:center;margin-bottom:20px;font-size:13px;}
+        input, select, textarea{width:100%;padding:13px;margin-top:10px;border-radius:10px;border:none;background:#2a2a2a;color:white;font-size:14px;}
+        textarea{min-height:80px;resize:vertical;}
+        .btn{width:100%;border:none;border-radius:10px;padding:14px;margin-top:12px;cursor:pointer;font-size:15px;font-weight:bold;background:#ff9800;color:black;text-align:center;transition:.3s;}
+        .btn:hover{background:#ffb74d;}
+        .btn-client{background:#2962ff;color:white;}
+        .btn-bailleur{background:#2e7d32;color:white;}
+        .btn-retour{background:#444;color:white;}
+        .btn-whatsapp{background:#25D366;color:white;}
+        .btn-momo{background:#ff6f00;color:white;}
+        
+        .cards{display:grid;grid-template-columns:1fr;gap:15px;margin-top:15px;}
+        .card{background:#1e1e1e;padding:12px;border-radius:12px;border:1px solid #333;}
+        .card img{width:100%;height:160px;object-fit:cover;border-radius:8px;margin-bottom:8px;}
+        .card h3{font-size:17px;color:#ff9800;margin-bottom:4px;}
+        .card p{font-size:13px;color:#ccc;margin-bottom:6px;}
+        
+        #map{width:100%;height:200px;border-radius:10px;margin-top:12px;z-index:1;}
+        .chat-box{flex:1;background:#181818;border-radius:10px;padding:12px;overflow-y:auto;max-height:220px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px;}
+        .msg{background:#333;padding:10px;border-radius:10px;max-width:80%;font-size:13px;}
+        .msg.me{background:#ff9800;color:black;align-self:flex-end;}
+        .badge-online{color:#4CAF50;font-size:12px;font-weight:bold;}
+        .checkbox-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:13px;}
+        .checkbox-group label{display:flex;align-items:center;gap:6px;background:#2a2a2a;padding:8px;border-radius:8px;cursor:pointer;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- 1. ACCUEIL -->
+    <div id="v-home" class="view active" style="justify-content:center; align-items:center; text-align:center;">
+        <h1 class="logo">SDV<span>.House</span></h1>
+        <p class="slogan">Plateforme Immobilière Intelligente (RDC)</p>
+        <button class="btn" onclick="nav('v-role')">Commencer 🚀</button>
+    </div>
+
+    <!-- 2. CHOIX DU PROFIL -->
+    <div id="v-role" class="view" style="justify-content:center;">
+        <h2 style="text-align:center; margin-bottom:20px;">Sélectionnez votre profil</h2>
+        <button class="btn btn-client" onclick="nav('v-auth-client')">👤 Client / Locataire</button>
+        <button class="btn btn-bailleur" onclick="nav('v-auth-bailleur')">🏠 Bailleur / Propriétaire</button>
+        <button class="btn btn-retour" onclick="nav('v-home')">Retour</button>
+    </div>
+
+    <!-- 3. AUTH CLIENT -->
+    <div id="v-auth-client" class="view" style="justify-content:center;">
+        <h2 class="logo">SDV<span>.House</span></h2>
+        <p class="slogan">Espace Client Cloud</p>
+        <input type="email" id="c-email" placeholder="Adresse Email">
+        <input type="password" id="c-pass" placeholder="Mot de passe">
+        <button class="btn btn-client" onclick="connexionReelle('client')">Connexion / Inscription</button>
+        <button class="btn btn-retour" onclick="nav('v-role')">Retour</button>
+    </div>
+
+    <!-- 4. AUTH BAILLEUR -->
+    <div id="v-auth-bailleur" class="view" style="justify-content:center;">
+        <h2 class="logo">SDV<span>.House</span></h2>
+        <p class="slogan">Espace Bailleur Cloud</p>
+        <input type="email" id="b-email" placeholder="Adresse Email">
+        <input type="password" id="b-pass" placeholder="Mot de passe">
+        <button class="btn btn-bailleur" onclick="connexionReelle('bailleur')">Connexion / Inscription</button>
+        <button class="btn btn-retour" onclick="nav('v-role')">Retour</button>
+    </div>
+
+    <!-- 5. DASHBOARD CLIENT -->
+    <div id="v-client-dash" class="view">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 class="logo" style="font-size:18px; margin:0;">SDV<span>.House</span></h2>
+            <button class="btn-retour" style="width:auto; padding:5px 10px; margin:0; font-size:11px;" onclick="nav('v-home')">Déconnexion</button>
+        </div>
+        <input type="text" id="filtre-ville" placeholder="🔍 Rechercher par ville (Kinshasa, Matadi...)" oninput="filtrerAnnonces()">
+        <div id="liste-maisons" class="cards"></div>
+    </div>
+
+    <!-- 6. DASHBOARD BAILLEUR (PUBLICATION AVEC ÉQUIPEMENTS) -->
+    <div id="v-bailleur-dash" class="view">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="font-size:16px;">Publier une Annonce</h2>
+            <button class="btn-retour" style="width:auto; padding:5px 10px; margin:0; font-size:11px;" onclick="nav('v-home')">Déconnexion</button>
+        </div>
+        <p class="badge-online" style="margin:5px 0;">🟢 Synchronisé Cloud</p>
+        <input type="text" id="p-titre" placeholder="Titre (ex: Villa Gombe)">
+        <input type="text" id="p-ville" placeholder="Ville (ex: Kinshasa)">
+        <input type="number" id="p-prix" placeholder="Prix mensuel ($)">
+        <select id="p-type">
+            <option value="Villa">Villa</option>
+            <option value="Appartement">Appartement</option>
+            <option value="Studio">Studio</option>
+            <option value="Maison Familiale">Maison Familiale</option>
+        </select>
+        <input type="text" id="p-img" placeholder="Lien URL de la photo réelle">
+        <textarea id="p-desc" placeholder="Description détaillée..."></textarea>
+        
+        <p style="font-size:13px; margin-top:10px; color:#ff9800; font-weight:bold;">Équipements inclus :</p>
+        <div class="checkbox-group">
+            <label><input type="checkbox" class="eq" value="Wi-Fi"> Wi-Fi</label>
+            <label><input type="checkbox" class="eq" value="Parking"> Parking</label>
+            <label><input type="checkbox" class="eq" value="Climatisation"> Climatisation</label>
+            <label><input type="checkbox" class="eq" value="Eau (Forage)"> Eau (Forage)</label>
+            <label><input type="checkbox" class="eq" value="Électricité"> Électricité</label>
+            <label><input type="checkbox" class="eq" value="Groupe électrogène"> Groupe électrogène</label>
+        </div>
+
+        <button class="btn btn-bailleur" onclick="publierAnnonceCloud()">Publier l'annonce</button>
+    </div>
+
+    <!-- 7. DÉTAILS, CARTE, PAIEMENT & CHAT -->
+    <div id="v-details" class="view">
+        <button class="btn-retour" style="width:auto; padding:6px 12px; margin-bottom:10px;" onclick="nav('v-client-dash')">← Retour</button>
+        <div id="details-corps"></div>
+
+        <h3 style="margin-top:15px; font-size:14px;">Localisation GPS</h3>
+        <div id="map"></div>
+
+        <h3 style="margin-top:15px; font-size:14px;">💳 Paiement Mobile Money & Réservation</h3>
+        <button class="btn btn-momo" onclick="payerMobileMoney('M-Pesa')">Payer acompte via M-Pesa / Airtel / Orange</button>
+
+        <h3 style="margin-top:15px; font-size:14px;">Discussion Temps Réel <span class="badge-online">🟢 En ligne</span></h3>
+        <div id="chat-box" class="chat-box"></div>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="chat-input" placeholder="Écrire un message..." style="margin-top:0;">
+            <button class="btn" style="width:70px; margin-top:0;" onclick="envoyerMessage()">Envoyer</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    // --- Moteur de données Cloud / Local unifié ---
+    let dbMaisons = JSON.parse(localStorage.getItem("sdv_master_maisons")) || [
+        {
+            id: 1,
+            titre: "Villa Moderne Gombe",
+            ville: "Kinshasa",
+            prix: 850,
+            type: "Villa",
+            image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80",
+            description: "Sécurisée avec groupe électrogène et forage d'eau permanent.",
+            equipements: ["Wi-Fi", "Climatisation", "Groupe électrogène", "Eau (Forage)"],
+            lat: -4.325, lng: 15.322
+        }
+    ];
+
+    let messagesChat = JSON.parse(localStorage.getItem("sdv_master_chat")) || [
+        { texte: "Bonjour, la maison est-elle libre ?", auteur: "client", time: "12:30" }
+    ];
+
+    let maisonSelectionnee = null;
+    let mapInstance = null;
+
+    function nav(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        if(viewId === 'v-client-dash') afficherAnnonces(dbMaisons);
+        if(viewId === 'v-details' && maisonSelectionnee) {
+            afficherDetails(maisonSelectionnee);
+            chargerChat();
+            setTimeout(initMap, 300);
+        }
+    }
+
+    function connexionReelle(role) {
+        let email = document.getElementById(role === 'client' ? "c-email" : "b-email").value;
+        if(!email) { alert("Veuillez entrer votre email"); return; }
+        alert("Authentification réussie ! Bienvenue sur SDV.House");
+        nav(role === 'client' ? 'v-client-dash' : 'v-bailleur-dash');
+    }
+
+    function publierAnnonceCloud() {
+        let titre = document.getElementById("p-titre").value;
+        let ville = document.getElementById("p-ville").value;
+        let prix = document.getElementById("p-prix").value;
+        let type = document.getElementById("p-type").value;
+        let image = document.getElementById("p-img").value || "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=600&q=80";
+        let description = document.getElementById("p-desc").value;
+        
+        let equipements = [];
+        document.querySelectorAll('.eq:checked').forEach(cb => equipements.push(cb.value));
+
+        if(!titre || !ville || !prix) {
+            alert("Veuillez remplir les champs obligatoires");
+            return;
+        }
+
+        let nouvelleMaison = {
+            id: Date.now(),
+            titre, ville, prix: Number(prix), type, image, description, equipements,
+            lat: -4.325, lng: 15.322
+        };
+
+        dbMaisons.push(nouvelleMaison);
+        localStorage.setItem("sdv_master_maisons", JSON.stringify(dbMaisons));
+        alert("Annonce publiée avec succès dans le cloud !");
+        nav('v-client-dash');
+    }
+
+    function afficherAnnonces(liste) {
+        let conteneur = document.getElementById("liste-maisons");
+        conteneur.innerHTML = "";
+        liste.forEach(m => {
+            conteneur.innerHTML += `
+                <div class="card">
+                    <img src="${m.image}" alt="Maison">
+                    <h3>${m.titre}</h3>
+                    <p>📍 ${m.ville} (${m.type}) — 💰 ${m.prix}$ / mois</p>
+                    <p style="font-size:11px; color:#aaa;">✨ ${m.equipements ? m.equipements.join(', ') : ''}</p>
+                    <button class="btn btn-client" style="padding:8px; margin-top:5px; font-size:12px;" onclick="ouvrirDetails(${m.id})">Voir détails & Carte GPS</button>
+                </div>
+            `;
+        });
+    }
+
+    function filtrerAnnonces() {
+        let txt = document.getElementById("filtre-ville").value.toLowerCase();
+        let resultat = dbMaisons.filter(m => m.ville.toLowerCase().includes(txt) || m.titre.toLowerCase().includes(txt));
+        afficherAnnonces(resultat);
+    }
+
+    function ouvrirDetails(id) {
+        maisonSelectionnee = dbMaisons.find(m => m.id === id);
+        nav('v-details');
+    }
+
+    function afficherDetails(m) {
+        document.getElementById("details-corps").innerHTML = `
+            <img src="${m.image}" style="width:100%; height:180px; object-fit:cover; border-radius:10px; margin-bottom:8px;">
+            <h2>${m.titre}</h2>
+            <p style="color:#ff9800; font-weight:bold; font-size:16px;">${m.prix}$ / mois</p>
+            <p style="font-size:13px; color:#ddd; margin-top:5px;">${m.description}</p>
+            <p style="font-size:12px; color:#aaa; margin-top:5px;"><b>Équipements :</b> ${m.equipements ? m.equipements.join(', ') : 'Aucun'}</p>
+        `;
+    }
+
+    function initMap() {
+        let mapDiv = document.getElementById("map");
+        if(!mapDiv) return;
+        if(mapInstance) mapInstance.remove();
+
+        mapInstance = L.map('map').setView([maisonSelectionnee.lat, maisonSelectionnee.lng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(mapInstance);
+        L.marker([maisonSelectionnee.lat, maisonSelectionnee.lng]).addTo(mapInstance)
+          .bindPopup(`<b>${maisonSelectionnee.titre}</b>`).openPopup();
+    }
+
+    function payerMobileMoney(operateur) {
+        let numero = prompt(`Entrez votre numéro ${operateur} (ex: +243...) :`);
+        if(numero) {
+            alert(`Demande de paiement de l'acompte envoyée au ${numero} via ${operateur}. Veuillez valider sur votre téléphone !`);
+        }
+    }
+
+    function chargerChat() {
+        let box = document.getElementById("chat-box");
+        box.innerHTML = "";
+        messagesChat.forEach(msg => {
+            let cls = msg.auteur === "client" ? "msg me" : "msg";
+            box.innerHTML += `<div class="${cls}">${msg.texte} <span style="font-size:9px; opacity:0.7;">✓✓</span></div>`;
+        });
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function envoyerMessage() {
+        let input = document.getElementById("chat-input");
+        if(!input.value.trim()) return;
+
+        messagesChat.push({ texte: input.value, auteur: "client", time: "12:35" });
+        localStorage.setItem("sdv_master_chat", JSON.stringify(messagesChat));
+        input.value = "";
+        chargerChat();
+
+        setTimeout(() => {
+            messagesChat.push({ texte: "Bien reçu ! Je confirme la visite.", auteur: "bailleur", time: "12:36" });
+            localStorage.setItem("sdv_master_chat", JSON.stringify(messagesChat));
+            chargerChat();
+        }, 1000);
+    }
+</script>
+
+</body>
+</html>
